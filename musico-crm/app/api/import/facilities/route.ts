@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     delimiter,
   })
   const rawRows = parseResult.data
-  const fatalErrors = parseResult.errors.filter(e => e.type === 'Delimiter' || e.type === 'Abort')
+  const fatalErrors = parseResult.errors.filter(e => (e.type as string) === 'Delimiter' || (e.type as string) === 'Abort')
 
   if (fatalErrors.length > 0) {
     return NextResponse.json({ error: 'CSVの解析に失敗しました' }, { status: 400 })
