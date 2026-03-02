@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest musico-crm --typescript --tailwind --eslint --app --src-dir=false --no-git --import-alias=\"@/*\" 2>&1)",
+      "Bash(npm install --ignore-scripts 2>&1 | tail -5 && echo \"Done\")",
+      "Bash(./node_modules/.bin/shadcn add toast --yes 2>&1 | tail -15)",
+      "Bash(./node_modules/.bin/shadcn add sonner --yes 2>&1 | tail -15)",
+      "Bash(./node_modules/.bin/tsc --noEmit 2>&1 | head -50)",
+      "Bash(NEXT_TURBO=0 ./node_modules/.bin/next build 2>&1 | tail -60)",
+      "Bash(npm run dev 2>&1)",
+      "Bash(curl -s -X POST \\\\\n  \"https://api.supabase.com/v1/projects/pzgausvwahdbmklvgogf/database/query\" \\\\\n  -H \"Authorization: Bearer sbp_707f233a45f63c607cd63604dac3ea9667ebd852\" \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\n    \"query\": \"ALTER TABLE facilities ADD COLUMN IF NOT EXISTS deal_note TEXT; ALTER TABLE facilities ADD COLUMN IF NOT EXISTS assigned_instructor TEXT; ALTER TABLE facilities ADD COLUMN IF NOT EXISTS instructor_dispatched BOOLEAN NOT NULL DEFAULT FALSE;\"\n  }')",
+      "Bash(cd \"/Users/yui/Library/CloudStorage/GoogleDrive-yui@archetypedigital.us/マイドライブ/MUSICO_CRM:SFA/musico_CRM-SFA/musico-crm\" && npx tsc --noEmit 2>&1 | head -50)",
+      "Bash(cd \"/Users/yui/Library/CloudStorage/GoogleDrive-yui@archetypedigital.us/マイドライブ/MUSICO_CRM:SFA/musico_CRM-SFA/musico-crm\" && node node_modules/typescript/bin/tsc --noEmit 2>&1 | head -60)",
+      "Bash(find \"/Users/yui/Library/CloudStorage/GoogleDrive-yui@archetypedigital.us/マイドライブ/MUSICO_CRM:SFA/musico_CRM-SFA/musico-crm/components\" -name \"*.tsx\" 2>/dev/null | head -30)"
+    ]
+  }
+}
