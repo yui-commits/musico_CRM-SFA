@@ -20,9 +20,20 @@ const STATUS_BADGE: Record<LeadStatus, string> = {
 }
 
 type SortDir = 'asc' | 'desc'
+type SortKey = 'next_action_date' | 'capacity'
 
-function sortByNextActionDate(facilities: Facility[], dir: SortDir): Facility[] {
+function sortFacilities(facilities: Facility[], key: SortKey, dir: SortDir): Facility[] {
   return [...facilities].sort((a, b) => {
+    if (key === 'capacity') {
+      const aVal = a.capacity
+      const bVal = b.capacity
+      if (aVal == null && bVal == null) return a.created_at.localeCompare(b.created_at)
+      if (aVal == null) return 1
+      if (bVal == null) return -1
+      const cmp = aVal - bVal
+      return dir === 'asc' ? cmp : -cmp
+    }
+    // next_action_date
     const aDate = (a as Facility & { next_action_date?: string | null }).next_action_date
     const bDate = (b as Facility & { next_action_date?: string | null }).next_action_date
     if (dir === 'asc') {
@@ -39,15 +50,21 @@ function sortByNextActionDate(facilities: Facility[], dir: SortDir): Facility[] 
 }
 
 export default function FacilityList({ facilities, onSelect }: FacilityListProps) {
+  const [sortKey, setSortKey] = useState<SortKey>('next_action_date')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
   const sorted = useMemo(
-    () => sortByNextActionDate(facilities, sortDir),
-    [facilities, sortDir]
+    () => sortFacilities(facilities, sortKey, sortDir),
+    [facilities, sortKey, sortDir]
   )
 
-  function toggleSort() {
-    setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('desc')
+    }
   }
 
   return (
@@ -72,13 +89,26 @@ export default function FacilityList({ facilities, onSelect }: FacilityListProps
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">電話番号</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">ステータス</th>
                 <th
-                  className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap cursor-pointer select-none hover:text-blue-600 group"
-                  onClick={toggleSort}
+                  className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap cursor-pointer select-none hover:text-blue-600"
+                  onClick={() => handleSort('capacity')}
+                >
+                  定員数
+                  {sortKey === 'capacity' && (
+                    <span className="ml-1 inline-block">
+                      {sortDir === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
+                <th
+                  className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap cursor-pointer select-none hover:text-blue-600"
+                  onClick={() => handleSort('next_action_date')}
                 >
                   次回予定日
-                  <span className="ml-1 inline-block">
-                    {sortDir === 'asc' ? '↑' : '↓'}
-                  </span>
+                  {sortKey === 'next_action_date' && (
+                    <span className="ml-1 inline-block">
+                      {sortDir === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">次回アクション</th>
                 <th className="px-4 py-3"></th>
@@ -111,6 +141,9 @@ export default function FacilityList({ facilities, onSelect }: FacilityListProps
                       >
                         {facility.lead_status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-xs">
+                      {facility.capacity != null ? `${facility.capacity}名` : '-'}
                     </td>
                     <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-xs">
                       {f.next_action_date ? formatDate(f.next_action_date) : '-'}
