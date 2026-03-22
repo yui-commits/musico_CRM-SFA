@@ -24,17 +24,17 @@ export const DEAL_STATUSES: DealStatus[] = [
   '開講見送り / 失注',
 ]
 
-export const KANBAN_LANES: { status: DealStatus; label: string; emoji: string }[] = [
-  { status: '面談日程調整中', label: '面談日程調整中', emoji: '⏳' },
-  { status: '面談設定済', label: '面談設定済', emoji: '📅' },
-  { status: '【Ph2】体験会・講師調整中', label: 'Ph1-2 面談実施済・体験会講師調整中', emoji: '🎻' },
-  { status: '【Ph2】体験会日程確定', label: 'Ph2 体験会日程および講師確定', emoji: '📆' },
-  { status: '【Ph3】チラシ作成中', label: 'Ph3 チラシ作成中', emoji: '🎨' },
-  { status: '【Ph4】告知・募集期間中', label: 'Ph3-4 チラシ送付完了・告知期間中', emoji: '📬' },
-  { status: '【Ph5】体験会準備中', label: 'Ph5 体験会準備中', emoji: '🎯' },
-  { status: '【Ph5】体験会実施済・集計中', label: 'Ph5 体験会実施済・集計中', emoji: '📊' },
-  { status: '【Ph6】開講決定・準備中', label: 'Ph6 開講決定🎊', emoji: '🎊' },
-  { status: '開講見送り / 失注', label: '開講見送り / 失注', emoji: '❌' },
+export const KANBAN_LANES: { status: DealStatus; label: string }[] = [
+  { status: '面談日程調整中', label: '日程調整中' },
+  { status: '面談設定済', label: '面談確定' },
+  { status: '【Ph2】体験会・講師調整中', label: '講師・体験会調整' },
+  { status: '【Ph2】体験会日程確定', label: '体験会日程確定' },
+  { status: '【Ph3】チラシ作成中', label: 'チラシ作成' },
+  { status: '【Ph4】告知・募集期間中', label: '告知・募集中' },
+  { status: '【Ph5】体験会準備中', label: '体験会準備' },
+  { status: '【Ph5】体験会実施済・集計中', label: '実施済・集計' },
+  { status: '【Ph6】開講決定・準備中', label: '開講決定' },
+  { status: '開講見送り / 失注', label: '見送り・失注' },
 ]
 
 /** @deprecated DBマスタ(ng_reasons)から取得する。フォールバック用に残す */

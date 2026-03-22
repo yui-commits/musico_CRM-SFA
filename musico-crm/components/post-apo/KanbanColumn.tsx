@@ -11,7 +11,6 @@ import { FacilityCard } from './FacilityCard'
 interface KanbanColumnProps {
   status: DealStatus
   label: string
-  emoji: string
   facilities: Facility[]
   onCardClick: (facility: Facility) => void
   phaseGroup: typeof PHASE_GROUPS[number]
@@ -20,7 +19,6 @@ interface KanbanColumnProps {
 export function KanbanColumn({
   status,
   label,
-  emoji,
   facilities,
   onCardClick,
   phaseGroup,
@@ -45,7 +43,6 @@ export function KanbanColumn({
               : 'border-gray-200 bg-gray-50/50 group-hover:border-gray-300',
           )}
         >
-          <span className="text-sm">{emoji}</span>
           <span className="text-xs text-gray-400 [writing-mode:vertical-rl]">{label}</span>
         </div>
       </div>
@@ -59,7 +56,6 @@ export function KanbanColumn({
         className="flex items-center gap-1.5 mb-2 px-2 py-1 min-h-[32px] cursor-pointer"
         onClick={() => isEmpty && setCollapsed(true)}
       >
-        <span className="text-sm">{emoji}</span>
         <span className={cn('text-xs font-semibold leading-snug flex-1 min-w-0', phaseGroup.headerText)}>
           {label}
         </span>

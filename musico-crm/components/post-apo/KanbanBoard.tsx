@@ -227,7 +227,6 @@ export function KanbanBoard({ initialFacilities }: KanbanBoardProps) {
                       key={status}
                       status={status}
                       label={lane.label}
-                      emoji={lane.emoji}
                       facilities={laneMap.get(status) ?? []}
                       onCardClick={handleCardClick}
                       phaseGroup={group}
