@@ -24,15 +24,29 @@ interface FacilityDetailPanelProps {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-xs font-medium text-gray-600 mb-1">{children}</label>
+    <label className="block text-xs font-medium text-gray-500 mb-1">{children}</label>
   )
 }
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
+function SectionCard({
+  icon,
+  title,
+  children,
+  className,
+}: {
+  icon: string
+  title: string
+  children: React.ReactNode
+  className?: string
+}) {
   return (
-    <h3 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-1 mb-3">
+    <div className={cn('rounded-lg border p-4 flex flex-col gap-3', className ?? 'border-gray-200 bg-white')}>
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+        <span>{icon}</span>
+        <span>{title}</span>
+      </h3>
       {children}
-    </h3>
+    </div>
   )
 }
 
@@ -93,10 +107,13 @@ function ActivitiesAccordion({ facilityId }: { facilityId: string }) {
       <button
         type="button"
         onClick={handleToggle}
-        className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-gray-100 text-left transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 text-left transition-colors"
       >
-        <span className="text-sm font-medium text-gray-700">テレアポ活動履歴</span>
-        <span className="text-xs text-gray-500">{open ? '▲ 閉じる' : '▼ 開く'}</span>
+        <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <span>&#128222;</span>
+          テレアポ活動履歴
+        </span>
+        <span className="text-xs text-gray-400">{open ? '閉じる' : '開く'}</span>
       </button>
 
       {open && (
@@ -241,7 +258,6 @@ export function FacilityDetailPanel({
     if (!facility) return
     setSaving(true)
     try {
-      // 1. lead_status だけ戻す。商談データ（deal_status / deal_note 等）は保持
       const res = await fetch(`/api/facilities/${facility.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -253,7 +269,6 @@ export function FacilityDetailPanel({
       }
       const { data: updated }: { data: Facility } = await res.json()
 
-      // 2. 理由を活動履歴として記録
       const salesPerson =
         (typeof window !== 'undefined' && localStorage.getItem(SALES_PERSON_KEY)) || '不明'
       const note = revertReason.trim()
@@ -329,7 +344,7 @@ export function FacilityDetailPanel({
       onUpdate(updated)
 
       if (willOpen) {
-        toast.success('🎉 開講決定おめでとうございます！', { duration: 5000 })
+        toast.success('開講決定おめでとうございます！', { duration: 5000 })
         setDealStatus('【Ph6】開講決定・準備中')
       } else {
         toast.success('保存しました')
@@ -340,6 +355,9 @@ export function FacilityDetailPanel({
       setSaving(false)
     }
   }
+
+  const selectClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+  const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 
   return (
     <>
@@ -355,7 +373,7 @@ export function FacilityDetailPanel({
       {/* Slide-in panel */}
       <div
         className={cn(
-          'fixed right-0 top-0 h-full w-full max-w-[560px] bg-white shadow-2xl z-50',
+          'fixed right-0 top-0 h-full w-full max-w-[560px] bg-gray-50 shadow-2xl z-50',
           'flex flex-col transition-transform duration-300 ease-in-out',
           isVisible ? 'translate-x-0' : 'translate-x-full',
         )}
@@ -366,36 +384,43 @@ export function FacilityDetailPanel({
             <h2 className="text-lg font-bold text-gray-900 leading-snug truncate">
               {facility?.name ?? ''}
             </h2>
-            {facility && (
-              <a
-                href={`tel:${facility.phone_number}`}
-                className="text-sm text-blue-600 hover:underline font-mono"
-              >
-                {facility.phone_number.replace(/(\d{2,4})(\d{4})(\d{4})/, '$1-$2-$3')}
-              </a>
-            )}
+            <div className="flex items-center gap-3 mt-1">
+              {facility && (
+                <a
+                  href={`tel:${facility.phone_number}`}
+                  className="text-sm text-blue-600 hover:underline font-mono"
+                >
+                  {facility.phone_number.replace(/(\d{2,4})(\d{4})(\d{4})/, '$1-$2-$3')}
+                </a>
+              )}
+              {facility?.municipality && (
+                <span className="text-xs text-gray-400">
+                  {facility.prefecture}{facility.municipality}
+                </span>
+              )}
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors text-2xl leading-none"
+            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
             aria-label="閉じる"
           >
-            &times;
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
           </button>
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
           {facility && (
             <>
-              {/* フェーズ */}
-              <div>
+              {/* Phase select */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
                 <FieldLabel>現在のフェーズ</FieldLabel>
                 <select
                   value={dealStatus}
                   onChange={(e) => setDealStatus(e.target.value as DealStatus)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={selectClass}
                 >
                   <option value="">-- 未設定 --</option>
                   {DEAL_STATUSES.map((s) => (
@@ -404,9 +429,8 @@ export function FacilityDetailPanel({
                 </select>
               </div>
 
-              {/* ── 施設基本情報（Pre-APO引き継ぎ） ── */}
-              <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 flex flex-col gap-3">
-                <h3 className="text-sm font-semibold text-blue-800">施設情報（テレアポ引き継ぎ）</h3>
+              {/* Facility info card */}
+              <SectionCard icon="&#128203;" title="施設情報" className="border-blue-100 bg-blue-50/60">
                 <div className="grid grid-cols-2 gap-3">
                   {facility.type && (
                     <div>
@@ -452,34 +476,32 @@ export function FacilityDetailPanel({
                     </a>
                   </div>
                 )}
-              </div>
+              </SectionCard>
 
-              {/* テレアポ活動履歴 */}
+              {/* Activities */}
               <ActivitiesAccordion facilityId={facility.id} />
 
-              {/* ── 商談メモ ── */}
-              <div>
-                <SectionHeading>商談・引き継ぎメモ</SectionHeading>
+              {/* Deal note */}
+              <SectionCard icon="&#128221;" title="商談・引き継ぎメモ">
                 <textarea
                   value={dealNote}
                   onChange={(e) => setDealNote(e.target.value)}
                   rows={4}
                   placeholder="面談内容、園側の反応、引き継ぎ事項などを記録..."
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                  className={cn(inputClass, 'resize-y')}
                 />
-              </div>
+              </SectionCard>
 
-              {/* ── 面談・基本情報 ── */}
-              <div>
-                <SectionHeading>面談・基本情報</SectionHeading>
-                <div className="flex flex-col gap-3">
+              {/* Meeting info */}
+              <SectionCard icon="&#128197;" title="面談・基本情報">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <FieldLabel>面談日時</FieldLabel>
                     <input
                       type="datetime-local"
                       value={appointmentDate}
                       onChange={(e) => setAppointmentDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={inputClass}
                     />
                   </div>
                   <div>
@@ -487,7 +509,7 @@ export function FacilityDetailPanel({
                     <select
                       value={appointmentMethod}
                       onChange={(e) => setAppointmentMethod(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={selectClass}
                     >
                       <option value="">-- 未設定 --</option>
                       {APPOINTMENT_METHODS.map((m) => (
@@ -496,16 +518,15 @@ export function FacilityDetailPanel({
                     </select>
                   </div>
                 </div>
-              </div>
+              </SectionCard>
 
-              {/* ── アウトリーチの型 ── */}
-              <div>
-                <SectionHeading>アウトリーチの型</SectionHeading>
-                <div className="flex flex-col gap-2">
+              {/* Outreach type */}
+              <SectionCard icon="&#127911;" title="アウトリーチの型">
+                <div className="flex items-center gap-3">
                   <select
                     value={outreachType}
                     onChange={(e) => setOutreachType(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={cn(selectClass, 'flex-1')}
                   >
                     <option value="">-- 未設定 --</option>
                     {OUTREACH_TYPES.map((t) => (
@@ -515,7 +536,7 @@ export function FacilityDetailPanel({
                   {outreachType && (
                     <span
                       className={cn(
-                        'self-start inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border',
+                        'flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border',
                         OUTREACH_BADGE_COLORS[outreachType] ??
                           'bg-gray-100 text-gray-800 border-gray-300',
                       )}
@@ -524,32 +545,29 @@ export function FacilityDetailPanel({
                     </span>
                   )}
                 </div>
-              </div>
+              </SectionCard>
 
-              {/* ── 調整・手配（アウトリーチなし以外） ── */}
+              {/* Instructor & trial */}
               {!hideOutreachFields && (
-                <div>
-                  <SectionHeading>講師・体験会調整</SectionHeading>
-                  <div className="flex flex-col gap-3">
+                <SectionCard icon="&#127931;" title="講師・体験会調整">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <FieldLabel>必要講師数</FieldLabel>
                       <select
                         value={requiredInstructors}
                         onChange={(e) => setRequiredInstructors(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={selectClass}
                       >
                         <option value="1">1名</option>
                         <option value="2">2名</option>
                       </select>
                     </div>
-
-                    {/* 担当講師（将来的に複数選択に拡張可能） */}
                     <div>
                       <FieldLabel>担当講師</FieldLabel>
                       <select
                         value={assignedInstructor}
                         onChange={(e) => setAssignedInstructor(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={selectClass}
                       >
                         <option value="">-- 未アサイン --</option>
                         {INSTRUCTORS.map((name) => (
@@ -557,41 +575,37 @@ export function FacilityDetailPanel({
                         ))}
                       </select>
                     </div>
-
-                    {/* 派遣済みチェック */}
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={instructorDispatched}
-                        onChange={(e) => setInstructorDispatched(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">講師派遣済み</span>
-                    </label>
-
-                    <div>
-                      <FieldLabel>体験会日時</FieldLabel>
-                      <input
-                        type="datetime-local"
-                        value={trialDate}
-                        onChange={(e) => setTrialDate(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
                   </div>
-                </div>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={instructorDispatched}
+                      onChange={(e) => setInstructorDispatched(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">講師派遣済み</span>
+                  </label>
+                  <div>
+                    <FieldLabel>体験会日時</FieldLabel>
+                    <input
+                      type="datetime-local"
+                      value={trialDate}
+                      onChange={(e) => setTrialDate(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </SectionCard>
               )}
 
-              {/* ── 販促物・募集 ── */}
-              <div>
-                <SectionHeading>販促物・募集</SectionHeading>
-                <div className="flex flex-col gap-3">
+              {/* Promotion & deadline */}
+              <SectionCard icon="&#128227;" title="販促物・募集">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <FieldLabel>チラシ配布方法</FieldLabel>
                     <select
                       value={flyerDeliveryMethod}
                       onChange={(e) => setFlyerDeliveryMethod(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={selectClass}
                     >
                       <option value="">-- 未設定 --</option>
                       {FLYER_DELIVERY_METHODS.map((m) => (
@@ -605,16 +619,15 @@ export function FacilityDetailPanel({
                       type="date"
                       value={applicationDeadline}
                       onChange={(e) => setApplicationDeadline(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={inputClass}
                     />
                   </div>
                 </div>
-              </div>
+              </SectionCard>
 
-              {/* ── 結果集計 ── */}
-              <div>
-                <SectionHeading>結果集計</SectionHeading>
-                <div className="flex flex-col gap-3">
+              {/* Results */}
+              <SectionCard icon="&#128200;" title="結果集計">
+                <div className="grid grid-cols-2 gap-3">
                   {!hideOutreachFields && (
                     <div>
                       <FieldLabel>体験会申込者数</FieldLabel>
@@ -623,15 +636,15 @@ export function FacilityDetailPanel({
                         min={0}
                         value={trialApplicants}
                         onChange={(e) => setTrialApplicants(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={inputClass}
                         placeholder="0"
                       />
                     </div>
                   )}
-                  <div>
+                  <div className={hideOutreachFields ? 'col-span-2' : ''}>
                     <FieldLabel>
                       <span className="font-bold text-gray-800">
-                        受講申込数（開講判断ライン: {MIN_ENROLLMENT_FOR_OPENING}名以上）
+                        受講申込数（開講ライン: {MIN_ENROLLMENT_FOR_OPENING}名）
                       </span>
                     </FieldLabel>
                     <input
@@ -640,34 +653,35 @@ export function FacilityDetailPanel({
                       value={enrollmentCount}
                       onChange={(e) => setEnrollmentCount(e.target.value)}
                       className={cn(
-                        'w-full border rounded-md px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2',
+                        inputClass,
+                        'font-bold',
                         parseInt(enrollmentCount, 10) >= MIN_ENROLLMENT_FOR_OPENING
                           ? 'border-green-400 bg-green-50 text-green-800 focus:ring-green-500'
-                          : 'border-gray-300 focus:ring-blue-500',
+                          : '',
                       )}
                       placeholder="0"
                     />
                     {parseInt(enrollmentCount, 10) >= MIN_ENROLLMENT_FOR_OPENING && (
                       <p className="text-xs text-green-700 font-semibold mt-1">
-                        🎊 開講ラインに達しています！保存すると「開講決定」に移行します。
+                        開講ラインに達しています。保存すると「開講決定」に移行します。
                       </p>
                     )}
                   </div>
                 </div>
-              </div>
+              </SectionCard>
             </>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-gray-200 bg-gray-50 flex flex-col gap-2">
+        <div className="px-5 py-4 border-t border-gray-200 bg-white flex flex-col gap-2">
           {!showRevertForm ? (
             <>
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 border border-gray-300 text-gray-700 rounded-md py-2 text-sm font-medium hover:bg-gray-100 transition-colors"
+                  className="flex-1 border border-gray-300 text-gray-700 rounded-md py-2.5 text-sm font-medium hover:bg-gray-50 transition-colors"
                 >
                   キャンセル
                 </button>
@@ -675,7 +689,7 @@ export function FacilityDetailPanel({
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 bg-blue-600 text-white rounded-md py-2 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 bg-blue-600 text-white rounded-md py-2.5 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {saving ? '保存中…' : '保存'}
                 </button>
@@ -686,13 +700,13 @@ export function FacilityDetailPanel({
                 disabled={saving}
                 className="w-full border border-orange-300 text-orange-700 rounded-md py-1.5 text-xs font-medium hover:bg-orange-50 disabled:opacity-50 transition-colors"
               >
-                ↩ テレアポ管理に戻す
+                テレアポ管理に戻す
               </button>
             </>
           ) : (
             <div className="flex flex-col gap-2">
               <p className="text-xs font-semibold text-orange-800">
-                ↩ テレアポ管理に戻す — 理由を記入してください
+                テレアポ管理に戻す — 理由を記入してください
               </p>
               <p className="text-xs text-gray-500">
                 商談・体験会フェーズで入力した情報やメモはそのまま保持されます。

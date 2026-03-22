@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -15,7 +15,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import type { Facility, DealStatus } from '@/types'
-import { KANBAN_LANES } from '@/lib/constants'
+import { KANBAN_LANES, PHASE_GROUPS } from '@/lib/constants'
 
 import { KanbanColumn } from './KanbanColumn'
 import { FacilityCard } from './FacilityCard'
@@ -29,19 +29,30 @@ async function fetchPostApoFacilities(): Promise<Facility[]> {
   const res = await fetch('/api/facilities?post_apo=true&page_size=200')
   if (!res.ok) throw new Error('施設データの取得に失敗しました')
   const json = await res.json()
-  // Support both { data: Facility[] } and Facility[]
   return Array.isArray(json) ? json : (json.data ?? [])
+}
+
+// 統合レーンのマッピング（旧ステータス → 新レーン）
+const MERGED_LANE: Partial<Record<DealStatus, DealStatus>> = {
+  '【Ph1】面談実施済・合意': '【Ph2】体験会・講師調整中',
+  '【Ph3】チラシ送付完了': '【Ph4】告知・募集期間中',
+}
+
+// status → phaseGroup のルックアップ
+const STATUS_TO_GROUP = new Map<string, typeof PHASE_GROUPS[number]>()
+for (const group of PHASE_GROUPS) {
+  for (const status of group.statuses) {
+    STATUS_TO_GROUP.set(status, group)
+  }
 }
 
 export function KanbanBoard({ initialFacilities }: KanbanBoardProps) {
   const queryClient = useQueryClient()
 
-  // Require 8px movement before drag starts — allows normal clicks to fire
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   )
 
-  // ── Server data ──────────────────────────────────────────
   const { data: serverFacilities } = useQuery<Facility[]>({
     queryKey: ['facilities', 'post-apo'],
     queryFn: fetchPostApoFacilities,
@@ -49,20 +60,45 @@ export function KanbanBoard({ initialFacilities }: KanbanBoardProps) {
     staleTime: 30_000,
   })
 
-  // Local optimistic copy that we mutate on drag
   const [optimisticFacilities, setOptimisticFacilities] = useState<Facility[] | null>(null)
   const facilities = optimisticFacilities ?? serverFacilities ?? []
 
-  // ── Drag state ───────────────────────────────────────────
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
   const activeFacility = activeDragId
     ? facilities.find((f) => f.id === activeDragId) ?? null
     : null
 
-  // ── Detail panel ─────────────────────────────────────────
   const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null)
 
-  // ── Handlers ─────────────────────────────────────────────
+  // ── Group facilities into lanes ──
+  const laneMap = useMemo(() => {
+    const firstLaneStatus = KANBAN_LANES[0].status
+    const map = new Map<DealStatus, Facility[]>()
+    for (const lane of KANBAN_LANES) map.set(lane.status, [])
+    for (const facility of facilities) {
+      const raw = facility.deal_status
+      const status = raw
+        ? (MERGED_LANE[raw] ?? (map.has(raw) ? raw : firstLaneStatus))
+        : firstLaneStatus
+      map.get(status)!.push(facility)
+    }
+    return map
+  }, [facilities])
+
+  // ── Summary counts per phase group ──
+  const groupCounts = useMemo(() => {
+    return PHASE_GROUPS.map((group) => {
+      const count = group.statuses.reduce(
+        (sum, status) => sum + (laneMap.get(status)?.length ?? 0),
+        0,
+      )
+      return { ...group, count }
+    })
+  }, [laneMap])
+
+  const totalCount = facilities.length
+
+  // ── Handlers ──
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveDragId(String(event.active.id))
   }, [])
@@ -76,17 +112,13 @@ export function KanbanBoard({ initialFacilities }: KanbanBoardProps) {
       const draggedId = String(active.id)
       const targetStatus = String(over.id) as DealStatus
 
-      // Validate target is a known lane status
       const isLane = KANBAN_LANES.some((l) => l.status === targetStatus)
       if (!isLane) return
 
       const dragged = facilities.find((f) => f.id === draggedId)
       if (!dragged || dragged.deal_status === targetStatus) return
 
-      // Snapshot for potential rollback
       const snapshot = optimisticFacilities ?? serverFacilities ?? []
-
-      // Optimistic update
       const updated = snapshot.map((f) =>
         f.id === draggedId ? { ...f, deal_status: targetStatus } : f,
       )
@@ -99,12 +131,9 @@ export function KanbanBoard({ initialFacilities }: KanbanBoardProps) {
           body: JSON.stringify({ deal_status: targetStatus }),
         })
         if (!res.ok) throw new Error('移動の保存に失敗しました')
-
-        // Sync with server cache
         queryClient.setQueryData<Facility[]>(['facilities', 'post-apo'], updated)
         setOptimisticFacilities(null)
       } catch (err) {
-        // Rollback
         setOptimisticFacilities(snapshot)
         toast.error(err instanceof Error ? err.message : '移動の保存に失敗しました')
       }
@@ -127,7 +156,6 @@ export function KanbanBoard({ initialFacilities }: KanbanBoardProps) {
       const next = isReverted
         ? base.filter((f) => f.id !== updated.id)
         : base.map((f) => (f.id === updated.id ? updated : f))
-      // queryClient を正として optimistic 状態はリセット（空配列が ?? をブロックするのを防ぐ）
       queryClient.setQueryData<Facility[]>(['facilities', 'post-apo'], next)
       setOptimisticFacilities(null)
       setSelectedFacility(isReverted ? null : updated)
@@ -135,49 +163,82 @@ export function KanbanBoard({ initialFacilities }: KanbanBoardProps) {
     [optimisticFacilities, serverFacilities, queryClient],
   )
 
-  // ── Group facilities into lanes ───────────────────────────
-  // 統合レーンのマッピング（旧ステータス → 新レーン）
-  const MERGED_LANE: Partial<Record<DealStatus, DealStatus>> = {
-    '【Ph1】面談実施済・合意': '【Ph2】体験会・講師調整中',
-    '【Ph3】チラシ送付完了': '【Ph4】告知・募集期間中',
-  }
-  const firstLaneStatus = KANBAN_LANES[0].status
-  const laneMap = new Map<DealStatus, Facility[]>()
-  for (const lane of KANBAN_LANES) {
-    laneMap.set(lane.status, [])
-  }
-  for (const facility of facilities) {
-    const raw = facility.deal_status
-    const status = raw
-      ? (MERGED_LANE[raw] ?? (laneMap.has(raw) ? raw : firstLaneStatus))
-      : firstLaneStatus
-    laneMap.get(status)!.push(facility)
-  }
-
-  // ── Render ───────────────────────────────────────────────
   return (
     <>
+      {/* Pipeline summary bar */}
+      <div className="mb-4 bg-white border border-gray-200 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-gray-700">パイプライン</h2>
+          <span className="text-xs text-gray-500">{totalCount}件</span>
+        </div>
+        {/* Segmented progress bar */}
+        {totalCount > 0 && (
+          <div className="flex h-2.5 rounded-full overflow-hidden bg-gray-100 mb-3">
+            {groupCounts.map((g) =>
+              g.count > 0 ? (
+                <div
+                  key={g.label}
+                  className={`${g.barColor} transition-all duration-300`}
+                  style={{ width: `${(g.count / totalCount) * 100}%` }}
+                />
+              ) : null,
+            )}
+          </div>
+        )}
+        {/* Phase chips */}
+        <div className="flex flex-wrap gap-2">
+          {groupCounts.map((g) => (
+            <div
+              key={g.label}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${g.headerBg} ${g.headerText} ${g.headerBorder} border`}
+            >
+              <span>{g.label}</span>
+              <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-xs font-bold ${g.countBg}`}>
+                {g.count}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={rectIntersection}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* Horizontal scroll container */}
-        <div className="flex gap-3 overflow-x-auto pb-4 min-h-[calc(100vh-160px)] items-start">
-          {KANBAN_LANES.map((lane) => (
-            <KanbanColumn
-              key={lane.status}
-              status={lane.status}
-              label={lane.label}
-              emoji={lane.emoji}
-              facilities={laneMap.get(lane.status) ?? []}
-              onCardClick={handleCardClick}
-            />
+        {/* Kanban with phase groups */}
+        <div className="flex gap-4 overflow-x-auto pb-4 min-h-[calc(100vh-220px)] items-start">
+          {PHASE_GROUPS.map((group) => (
+            <div key={group.label} className="flex flex-col flex-shrink-0">
+              {/* Phase group header */}
+              <div className={`flex items-center gap-2 px-2 py-1.5 mb-2 rounded-md ${group.headerBg} ${group.headerBorder} border`}>
+                <span className={`text-xs font-bold ${group.headerText}`}>{group.label}</span>
+                <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-xs font-bold ${group.countBg}`}>
+                  {group.statuses.reduce((sum, s) => sum + (laneMap.get(s)?.length ?? 0), 0)}
+                </span>
+              </div>
+              {/* Lanes within this group */}
+              <div className="flex gap-2">
+                {group.statuses.map((status) => {
+                  const lane = KANBAN_LANES.find((l) => l.status === status)!
+                  return (
+                    <KanbanColumn
+                      key={status}
+                      status={status}
+                      label={lane.label}
+                      emoji={lane.emoji}
+                      facilities={laneMap.get(status) ?? []}
+                      onCardClick={handleCardClick}
+                      phaseGroup={group}
+                    />
+                  )
+                })}
+              </div>
+            </div>
           ))}
         </div>
 
-        {/* Ghost card shown while dragging */}
         <DragOverlay dropAnimation={null}>
           {activeFacility ? (
             <FacilityCard
@@ -189,7 +250,6 @@ export function KanbanBoard({ initialFacilities }: KanbanBoardProps) {
         </DragOverlay>
       </DndContext>
 
-      {/* Detail slide-in panel */}
       <FacilityDetailPanel
         facility={selectedFacility}
         onClose={handlePanelClose}
