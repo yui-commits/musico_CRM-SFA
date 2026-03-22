@@ -11,6 +11,7 @@ import FacilityList from '@/components/pre-apo/FacilityList'
 
 interface Filters {
   prefecture?: string
+  municipality?: string
   leadStatus?: string
   search?: string
 }
@@ -30,6 +31,7 @@ async function fetchFacilities(): Promise<FacilityWithMeta[]> {
 function applyFilters(facilities: FacilityWithMeta[], filters: Filters): FacilityWithMeta[] {
   return facilities.filter((f) => {
     if (filters.prefecture && f.prefecture !== filters.prefecture) return false
+    if (filters.municipality && f.municipality !== filters.municipality) return false
     if (filters.leadStatus && f.lead_status !== filters.leadStatus) return false
     if (filters.search) {
       const q = filters.search.toLowerCase()
@@ -96,7 +98,7 @@ export default function PreApoClient() {
       <TodayTasks facilities={todayFacilities} onSelect={handleSelect} />
 
       {/* Filters */}
-      <FacilityFilters onFilter={setFilters} />
+      <FacilityFilters onFilter={setFilters} facilities={facilities} />
 
       {/* Facility List */}
       <FacilityList facilities={filteredFacilities} onSelect={handleSelect} />
