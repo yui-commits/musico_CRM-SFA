@@ -40,12 +40,7 @@ export type FlyerDeliveryMethod =
   | '印刷・郵送'
   | '印刷・持参'
 
-export type NgReason =
-  | '物理的要因'
-  | '競合・既存あり'
-  | '特色・ターゲット不一致'
-  | '募集停止中'
-  | 'その他'
+export type NgReason = string
 
 export type NextAction =
   | '設定なし'

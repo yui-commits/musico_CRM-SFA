@@ -1,4 +1,4 @@
-import type { LeadStatus, DealStatus, NgReason, NextAction, FacilityType, AppointmentMethod, OutreachType, FlyerDeliveryMethod } from '@/types'
+import type { LeadStatus, DealStatus, NextAction, FacilityType, AppointmentMethod, OutreachType, FlyerDeliveryMethod } from '@/types'
 
 export const LEAD_STATUSES: LeadStatus[] = [
   '未着手',
@@ -37,7 +37,8 @@ export const KANBAN_LANES: { status: DealStatus; label: string; emoji: string }[
   { status: '開講見送り / 失注', label: '開講見送り / 失注', emoji: '❌' },
 ]
 
-export const NG_REASONS: NgReason[] = [
+/** @deprecated DBマスタ(ng_reasons)から取得する。フォールバック用に残す */
+export const NG_REASONS_FALLBACK: string[] = [
   '物理的要因',
   '競合・既存あり',
   '特色・ターゲット不一致',

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { LEAD_STATUSES, NG_REASONS, NEXT_ACTIONS, APPOINTMENT_METHODS, SALES_PERSON_KEY } from '@/lib/constants'
+import { LEAD_STATUSES, NG_REASONS_FALLBACK, NEXT_ACTIONS, APPOINTMENT_METHODS, SALES_PERSON_KEY } from '@/lib/constants'
 import { LeadStatus } from '@/types'
 
 interface CallFormProps {
@@ -38,11 +38,24 @@ export default function CallForm({ facilityId, onSaved }: CallFormProps) {
   const [form, setForm] = useState<FormState>(INITIAL_STATE)
   const [isDirty, setIsDirty] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [ngReasons, setNgReasons] = useState<string[]>(NG_REASONS_FALLBACK)
 
   // Load sales person from localStorage on mount
   useEffect(() => {
     const person = localStorage.getItem(SALES_PERSON_KEY) ?? ''
     setForm((prev) => ({ ...prev, salesPerson: person }))
+  }, [])
+
+  // Fetch NG reasons from DB
+  useEffect(() => {
+    fetch('/api/ng-reasons')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.data?.length) {
+          setNgReasons(json.data.map((r: { name: string }) => r.name))
+        }
+      })
+      .catch(() => { /* フォールバック値を使用 */ })
   }, [])
 
   // Warn before unload when dirty
@@ -180,7 +193,7 @@ export default function CallForm({ facilityId, onSaved }: CallFormProps) {
             onChange={(e) => setField('ngReason', e.target.value)}
           >
             <option value="">選択してください</option>
-            {NG_REASONS.map((r) => (
+            {ngReasons.map((r) => (
               <option key={r} value={r}>
                 {r}
               </option>

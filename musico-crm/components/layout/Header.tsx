@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'ダッシュボード' },
   { href: '/report', label: '週次レポート' },
   { href: '/import', label: 'CSVインポート' },
+  { href: '/settings', label: '設定' },
 ]
 
 export function Header({ onChangePerson }: HeaderProps) {
