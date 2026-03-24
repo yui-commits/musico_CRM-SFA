@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Facility, LeadStatus } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { formatPhoneNumber } from '@/lib/normalizers'
+
 
 interface FacilityListProps {
   facilities: Facility[]
@@ -86,7 +86,7 @@ export default function FacilityList({ facilities, onSelect }: FacilityListProps
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">施設名</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">エリア</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">電話番号</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">施設タイプ</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">ステータス</th>
                 <th
                   className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap cursor-pointer select-none hover:text-blue-600"
@@ -135,8 +135,8 @@ export default function FacilityList({ facilities, onSelect }: FacilityListProps
                     <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                       {facility.prefecture}{facility.municipality}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap font-mono text-xs">
-                      {formatPhoneNumber(facility.phone_number)}
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-xs">
+                      {facility.type ?? '-'}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span
