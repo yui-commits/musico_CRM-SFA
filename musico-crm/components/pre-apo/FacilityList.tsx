@@ -126,8 +126,11 @@ export default function FacilityList({ facilities, onSelect }: FacilityListProps
                     className="hover:bg-blue-50 cursor-pointer transition-colors"
                     onClick={() => onSelect(facility.id)}
                   >
-                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap max-w-[200px] truncate">
-                      {facility.name}
+                    <td className="px-4 py-3 max-w-[240px]">
+                      <p className="font-medium text-gray-900 truncate">{facility.name}</p>
+                      {facility.operating_company && (
+                        <p className="text-xs text-gray-400 truncate">{facility.operating_company}</p>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                       {facility.prefecture}{facility.municipality}

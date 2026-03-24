@@ -53,6 +53,7 @@ export type NextAction =
 export interface Facility {
   id: string
   name: string
+  operating_company: string | null
   phone_number: string
   type: FacilityType | null
   prefecture: string

@@ -8,6 +8,7 @@ import { LeadStatus } from '@/types'
 interface CallFormProps {
   facilityId: string
   onSaved: (wasApo: boolean, nextFacilityId?: string) => void
+  onSavedNext?: (wasApo: boolean) => void
 }
 
 interface FormState {
@@ -34,7 +35,7 @@ const INITIAL_STATE: FormState = {
   recipientName: '',
 }
 
-export default function CallForm({ facilityId, onSaved }: CallFormProps) {
+export default function CallForm({ facilityId, onSaved, onSavedNext }: CallFormProps) {
   const [form, setForm] = useState<FormState>(INITIAL_STATE)
   const [isDirty, setIsDirty] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -124,7 +125,11 @@ export default function CallForm({ facilityId, onSaved }: CallFormProps) {
       setIsDirty(false)
 
       const wasApo = form.callStatus === 'アポ獲得'
-      onSaved(wasApo, action === 'next' ? data.nextFacilityId : undefined)
+      if (action === 'next' && onSavedNext) {
+        onSavedNext(wasApo)
+      } else {
+        onSaved(wasApo, action === 'next' ? data.nextFacilityId : undefined)
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '保存に失敗しました')
     } finally {

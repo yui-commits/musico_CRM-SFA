@@ -48,6 +48,7 @@ function normalizeRow(raw: Record<string, string | undefined>): Record<string, s
     '園児数':      ['園児数', '定員数', '定員'],
     '既存の課外教室': ['既存の課外教室', '既存習い事', '既存教室'],
     '園の特色・方針': ['園の特色・方針', '園の特色', '特色・方針', '特色'],
+    '運営法人':       ['運営法人', '法人名', '運営会社'],
   }
 
   const result: Record<string, string | undefined> = { ...normalized }
@@ -138,6 +139,7 @@ export async function POST(request: NextRequest) {
 
     successRows.push({
       name,
+      operating_company: row['運営法人']?.trim() || null,
       phone_number: phone,
       type: row['施設種別']?.trim() || null,
       prefecture,

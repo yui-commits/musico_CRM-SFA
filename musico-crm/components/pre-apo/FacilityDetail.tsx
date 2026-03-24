@@ -53,8 +53,11 @@ export default function FacilityDetail({ facility }: FacilityDetailProps) {
             </span>
           )}
         </div>
+        {facility.operating_company && (
+          <p className="text-xs text-gray-500 mt-0.5">{facility.operating_company}</p>
+        )}
         <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_BADGE[facility.lead_status]}`}
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border mt-1 ${STATUS_BADGE[facility.lead_status]}`}
         >
           {facility.lead_status}
         </span>

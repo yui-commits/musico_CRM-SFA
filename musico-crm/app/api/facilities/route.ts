@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('facilities')
-    .select('*', { count: 'exact' })
+    .select('*, activities(next_action, next_action_date, called_at)', { count: 'exact' })
 
   // Pre-APO: only non-apo statuses
   if (leadStatus === 'pre-apo') {
