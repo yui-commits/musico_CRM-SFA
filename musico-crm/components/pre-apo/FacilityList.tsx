@@ -20,10 +20,27 @@ const STATUS_BADGE: Record<LeadStatus, string> = {
 }
 
 type SortDir = 'asc' | 'desc'
-type SortKey = 'next_action_date' | 'capacity'
+type SortKey = 'next_action_date' | 'capacity' | 'type'
+
+const TYPE_ORDER: Record<string, number> = {
+  '幼稚園': 0,
+  '保育園': 1,
+  '認定こども園': 2,
+  '学童': 3,
+  'その他': 4,
+}
 
 function sortFacilities(facilities: Facility[], key: SortKey, dir: SortDir): Facility[] {
   return [...facilities].sort((a, b) => {
+    if (key === 'type') {
+      const aVal = a.type != null ? (TYPE_ORDER[a.type] ?? 99) : 99
+      const bVal = b.type != null ? (TYPE_ORDER[b.type] ?? 99) : 99
+      if (aVal === 99 && bVal === 99) return a.created_at.localeCompare(b.created_at)
+      if (aVal === 99) return 1
+      if (bVal === 99) return -1
+      const cmp = aVal - bVal
+      return dir === 'asc' ? cmp : -cmp
+    }
     if (key === 'capacity') {
       const aVal = a.capacity
       const bVal = b.capacity
@@ -86,7 +103,17 @@ export default function FacilityList({ facilities, onSelect }: FacilityListProps
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">施設名</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">エリア</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">施設タイプ</th>
+                <th
+                  className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap cursor-pointer select-none hover:text-blue-600"
+                  onClick={() => handleSort('type')}
+                >
+                  施設タイプ
+                  {sortKey === 'type' && (
+                    <span className="ml-1 inline-block">
+                      {sortDir === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">ステータス</th>
                 <th
                   className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap cursor-pointer select-none hover:text-blue-600"
